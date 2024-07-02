@@ -41,8 +41,30 @@ class Deconv3DLayerBN(nn.Module):
         x = self.relu(x)
         return x
 
+'''class CropAndConcatLayer(nn.Module):
+    def forward(self, x1, x2):
+        return torch.cat([x1, x2], dim=1)'''
+
 class CropAndConcatLayer(nn.Module):
     def forward(self, x1, x2):
+        # Ensure the spatial dimensions match
+        diff_depth = x2.size(2) - x1.size(2)
+        diff_height = x2.size(3) - x1.size(3)
+        diff_width = x2.size(4) - x1.size(4)
+
+        x2 = x2[:, :, diff_depth // 2 : x2.size(2) - diff_depth // 2,
+                 diff_height // 2 : x2.size(3) - diff_height // 2,
+                 diff_width // 2 : x2.size(4) - diff_width // 2]
+        
+        # If the dimensions are odd, we need to handle the edge case
+        if x2.size(2) != x1.size(2):
+            x2 = x2[:, :, :-1, :, :]
+        if x2.size(3) != x1.size(3):
+            x2 = x2[:, :, :, :-1, :]
+        if x2.size(4) != x1.size(4):
+            x2 = x2[:, :, :, :, :-1]
+        
+        print(f"x1 shape: {x1.shape}, x2 shape: {x2.shape}")
         return torch.cat([x1, x2], dim=1)
 
 class Generator(nn.Module):
@@ -85,38 +107,62 @@ class Generator(nn.Module):
 
     def forward(self, x):
         # Encoder
+        print(f'Input: {x.shape}')
         conv1 = self.conv1_1(x)
+        print(f'conv1_1: {conv1.shape}')
         conv1 = self.conv1_2(conv1)
+        print(f'conv1_2: {conv1.shape}')
         pool1 = self.pool1(conv1)
+        print(f'pool1: {pool1.shape}')
 
         conv2 = self.conv2_1(pool1)
+        print(f'conv2_1: {conv2.shape}')
         conv2 = self.conv2_2(conv2)
+        print(f'conv2_2: {conv2.shape}')
         pool2 = self.pool2(conv2)
+        print(f'pool2: {pool2.shape}')
 
         conv3 = self.conv3_1(pool2)
+        print(f'conv3_1: {conv3.shape}')
         conv3 = self.conv3_2(conv3)
+        print(f'conv3_2: {conv3.shape}')
         pool3 = self.pool3(conv3)
+        print(f'pool3: {pool3.shape}')
 
         # Bottleneck
         conv4 = self.conv4_1(pool3)
+        print(f'conv4_1: {conv4.shape}')
         conv4 = self.conv4_2(conv4)
+        print(f'conv4_2: {conv4.shape}')
 
         # Decoder
         upconv3 = self.upconv3(conv4)
+        print(f'upconv3: {upconv3.shape}')
         concat3 = self.concat3(upconv3, conv3)
+        print(f'concat3: {concat3.shape}')
         conv5 = self.conv5_1(concat3)
+        print(f'conv5_1: {conv5.shape}')
         conv5 = self.conv5_2(conv5)
+        print(f'conv5_2: {conv5.shape}')
 
         upconv2 = self.upconv2(conv5)
+        print(f'upconv2: {upconv2.shape}')
         concat2 = self.concat2(upconv2, conv2)
+        print(f'concat2: {concat2.shape}')
         conv6 = self.conv6_1(concat2)
+        print(f'conv6_1: {conv6.shape}')
         conv6 = self.conv6_2(conv6)
+        print(f'conv6_2: {conv6.shape}')
 
         upconv1 = self.upconv1(conv6)
+        print(f'upconv1_1: {upconv1.shape}')
         concat1 = self.concat1(upconv1, conv1)
+        print(f'concat1: {concat1.shape}')
         conv7 = self.conv7_1(concat1)
+        print(f'conv7: {conv7.shape}')
 
         outputs = self.output_conv(conv7)
+        print(f'Output: {outputs.shape}')
 
         return outputs
 

@@ -23,8 +23,8 @@ args = parser.parse_args()
 class VAGAN(nn.Module):
     def __init__(self, input_shape):
         super(VAGAN, self).__init__()
-        self.critic = Critic(input_shape[0])
-        self.generator = Generator(input_shape[0])
+        self.critic = Critic(input_shape[1])
+        self.generator = Generator(input_shape[1])
         
     def forward(self, x):
         generated_maps = self.generator(x)
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    input_shape = (args.batch_size, 91, 108, 91)
+    input_shape = (args.batch_size, 1, 91, 108, 91)
     vagan = VAGAN(input_shape)
     gen_optimizer = torch.optim.Adam(vagan.generator.parameters(), lr=1e-4)
     critic_optimizer = torch.optim.Adam(vagan.critic.parameters(), lr=1e-4)
